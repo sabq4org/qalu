@@ -6,6 +6,8 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  // خلف بروكسي (Cloudflare → Railway) يجب الوثوق بترويسة المضيف
+  trustHost: true,
   session: { strategy: "jwt" },
   pages: { signIn: "/login" },
   providers: [
