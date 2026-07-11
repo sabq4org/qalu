@@ -5,7 +5,10 @@ import { normalizeArabic, slugifyArabic } from "@/lib/arabic";
 
 const approvedCountExpr = sql<number>`count(${statements.id}) filter (where ${statements.status} = 'approved')`;
 
-/** قائمة الشخصيات مع عدد تصريحاتها المعتمدة — الموثقة والأكثر تصريحات أولاً */
+/**
+ * قائمة الشخصيات للعرض العام — الموثقة فقط.
+ * غير الموثقة (المستخرجة آلياً) تعيش في لوحة المراجعة ولا تظهر للزوار أبداً.
+ */
 export async function listFiguresWithCounts(opts: { limit?: number; offset?: number } = {}) {
   const { limit = 24, offset = 0 } = opts;
   return await db()
@@ -20,8 +23,9 @@ export async function listFiguresWithCounts(opts: { limit?: number; offset?: num
     })
     .from(figures)
     .leftJoin(statements, eq(statements.figureId, figures.id))
+    .where(eq(figures.verified, true))
     .groupBy(figures.id)
-    .orderBy(asc(figures.displayOrder), desc(figures.verified), desc(approvedCountExpr))
+    .orderBy(asc(figures.displayOrder), desc(approvedCountExpr))
     .limit(limit)
     .offset(offset);
 }
