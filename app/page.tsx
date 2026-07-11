@@ -5,6 +5,35 @@ import { latestApprovedStatements, listFiguresWithCounts } from "@/services/figu
 
 export const revalidate = 300;
 
+export const metadata = {
+  alternates: { canonical: "/" },
+};
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+
+const siteJsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": `${SITE_URL}/#website`,
+      name: "ماذا قالوا؟",
+      alternateName: "Qalu",
+      url: SITE_URL,
+      description:
+        "أرشيف موثق لتصريحات الشخصيات العامة العربية — النص الحرفي، بمصدره، بتاريخه.",
+      inLanguage: "ar",
+    },
+    {
+      "@type": "Organization",
+      "@id": `${SITE_URL}/#organization`,
+      name: "ماذا قالوا؟",
+      url: SITE_URL,
+      logo: `${SITE_URL}/icon.svg`,
+    },
+  ],
+};
+
 async function loadHomeData() {
   try {
     const [figures, statements] = await Promise.all([
@@ -24,6 +53,10 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-12">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd) }}
+      />
       <section className="relative overflow-hidden rounded-2xl border border-border bg-card text-center py-14 px-8">
         <div className="absolute top-0 right-0 left-0 h-0.5 bg-gradient-to-l from-transparent via-accent to-transparent" />
         <h1 className="text-4xl font-bold mb-4">

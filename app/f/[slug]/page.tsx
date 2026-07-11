@@ -29,16 +29,25 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         ? `آخر تصريح: «${statements[0].text.slice(0, 160)}»`
         : `تصريحات ${figure.name} الموثقة بالمصدر والتاريخ.`);
 
+    const ogImage = figure.imageUrl ?? "/og.png";
     return {
       title: `${figure.name}${figure.title ? ` — ${figure.title}` : ""} | تصريحات موثقة`,
       description: description.slice(0, 220),
       robots: indexable ? "index, follow" : "noindex, follow",
       alternates: { canonical: `${SITE_URL}/f/${encodeURIComponent(figure.slug)}` },
       openGraph: {
-        title: `تصريحات ${figure.name}`,
+        title: `تصريحات ${figure.name} الموثقة`,
         description: description.slice(0, 220),
         type: "profile",
         locale: "ar_SA",
+        url: `${SITE_URL}/f/${encodeURIComponent(figure.slug)}`,
+        images: [{ url: ogImage, alt: figure.name }],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: `تصريحات ${figure.name} الموثقة`,
+        description: description.slice(0, 220),
+        images: [ogImage],
       },
     };
   } catch {
@@ -68,13 +77,31 @@ export default async function FigurePage({ params, searchParams }: PageProps) {
   const hasMore = statements.length > PAGE_SIZE;
   const visible = statements.slice(0, PAGE_SIZE);
 
+  const personId = `${SITE_URL}/f/${encodeURIComponent(figure.slug)}#person`;
   const jsonLd = {
     "@context": "https://schema.org",
-    "@type": "Person",
-    name: figure.name,
-    jobTitle: figure.title ?? undefined,
-    description: figure.bio ?? undefined,
-    url: `${SITE_URL}/f/${encodeURIComponent(figure.slug)}`,
+    "@graph": [
+      {
+        "@type": "Person",
+        "@id": personId,
+        name: figure.name,
+        jobTitle: figure.title ?? undefined,
+        description: figure.bio ?? undefined,
+        image: figure.imageUrl ? `${SITE_URL}${figure.imageUrl}` : undefined,
+        url: `${SITE_URL}/f/${encodeURIComponent(figure.slug)}`,
+      },
+      ...visible.slice(0, 10).map((s) => ({
+        "@type": "Quotation",
+        text: s.text,
+        spokenByCharacter: { "@id": personId },
+        datePublished: s.statementDate
+          ? new Date(s.statementDate).toISOString().slice(0, 10)
+          : undefined,
+        isBasedOn: s.sourceUrl,
+        about: s.topicName ?? undefined,
+        inLanguage: "ar",
+      })),
+    ],
   };
 
   return (

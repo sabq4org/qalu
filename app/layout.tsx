@@ -12,18 +12,40 @@ const plexArabic = IBM_Plex_Sans_Arabic({
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
+const SITE_DESCRIPTION =
+  "أرشيف موثق لتصريحات الشخصيات العامة العربية — نرصد ما قيل، متى قيل، وممّن قيل. كل تصريح بنصه الحرفي ومصدره الصحفي وتاريخه.";
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
     default: "ماذا قالوا؟ — القول الفصل في التصريحات",
     template: "%s | ماذا قالوا؟",
   },
-  description:
-    "أرشيف موثق لتصريحات الشخصيات العامة العربية — نرصد ما قيل، متى قيل، وممّن قيل. كل تصريح بنصه الحرفي ومصدره الصحفي وتاريخه.",
+  description: SITE_DESCRIPTION,
+  applicationName: "ماذا قالوا؟",
   openGraph: {
     siteName: "ماذا قالوا؟",
     locale: "ar_SA",
     type: "website",
+    url: SITE_URL,
+    images: [
+      {
+        url: "/og.png",
+        width: 1200,
+        height: 630,
+        alt: "ماذا قالوا؟ — القول الفصل في التصريحات",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ماذا قالوا؟ — القول الفصل في التصريحات",
+    description: SITE_DESCRIPTION,
+    images: ["/og.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
   },
 };
 
