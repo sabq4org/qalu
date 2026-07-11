@@ -34,7 +34,7 @@ export default function StatementCard(props: StatementCardProps) {
             {props.figureTitle && <span className="text-sm text-muted">{props.figureTitle}</span>}
           </>
         )}
-        <time className="tabular text-sm font-semibold text-accent mr-auto whitespace-nowrap">
+        <time className="tabular text-sm font-semibold text-accent whitespace-nowrap">
           {formatArabicDate(props.statementDate)}
         </time>
       </div>
@@ -51,20 +51,20 @@ export default function StatementCard(props: StatementCardProps) {
         </p>
       )}
       <div className="mt-4 pt-3 border-t border-border flex flex-wrap items-center gap-3 text-sm text-muted">
-        {props.topicName && (
-          <span className="rounded-full bg-accent-soft px-3 py-0.5 text-accent font-semibold">
-            {props.topicName}
-          </span>
-        )}
         <a
           href={props.sourceUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-accent font-semibold hover:underline mr-auto"
+          className="text-accent font-semibold hover:underline"
           title={props.sourceTitle ?? undefined}
         >
           المصدر: {props.sourceName ?? "صحيفة سبق"} ↗
         </a>
+        {props.topicName && (
+          <span className="rounded-full bg-accent-soft px-3 py-0.5 text-accent font-semibold mr-auto">
+            {props.topicName}
+          </span>
+        )}
       </div>
     </article>
   );
