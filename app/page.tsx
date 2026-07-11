@@ -24,7 +24,7 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-12">
-      <section className="relative overflow-hidden rounded-2xl border border-border bg-card text-center py-10 px-8">
+      <section className="relative overflow-hidden rounded-2xl border border-border bg-card text-center py-14 px-8">
         <div className="absolute top-0 right-0 left-0 h-0.5 bg-gradient-to-l from-transparent via-accent to-transparent" />
         <h1 className="text-4xl font-bold mb-4">
           ماذا قالوا<span className="text-accent">؟</span>
