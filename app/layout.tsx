@@ -8,6 +8,8 @@ const plexArabic = IBM_Plex_Sans_Arabic({
   weight: ["400", "600", "700"],
   subsets: ["arabic", "latin"],
   variable: "--font-plex-arabic",
+  display: "swap",
+  preload: true,
 });
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
@@ -58,7 +60,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Link href="/" aria-label="ماذا قالوا — الرئيسية">
               <BrandMark size={38} />
             </Link>
-            <p className="text-sm text-muted hidden sm:block tracking-wide">
+            <p className="text-sm text-muted hidden sm:block">
               القول الفصل في التصريحات
             </p>
           </div>

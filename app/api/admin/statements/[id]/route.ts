@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { eq } from "drizzle-orm";
 import { requireStaff } from "@/auth";
 import { db } from "@/db";
@@ -45,13 +45,19 @@ export async function PATCH(
 
     // تحديث الصفحات العامة المتأثرة فوراً بدل انتظار الـ revalidate الدوري
     const [figure] = await db()
-      .select({ slug: figures.slug })
+      .select({ id: figures.id, slug: figures.slug })
       .from(figures)
       .innerJoin(statements, eq(statements.figureId, figures.id))
       .where(eq(statements.id, id))
       .limit(1);
-    if (figure) revalidatePath(`/f/${figure.slug}`);
+    if (figure) {
+      revalidatePath(`/f/${figure.slug}`);
+      revalidateTag(`figure:${figure.slug}`, "max");
+      revalidateTag(`figure-statements:${figure.id}`, "max");
+    }
     revalidatePath("/");
+    revalidateTag("statements", "max");
+    revalidateTag("figures", "max");
 
     return NextResponse.json({ statement: updated });
   } catch (err) {

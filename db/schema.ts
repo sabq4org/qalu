@@ -92,6 +92,7 @@ export const statements = pgTable(
   (t) => [
     uniqueIndex("idx_statements_dedupe_hash").on(t.dedupeHash),
     index("idx_statements_figure_status").on(t.figureId, t.status),
+    index("idx_statements_figure_status_date").on(t.figureId, t.status, t.statementDate),
     index("idx_statements_status_created").on(t.status, t.createdAt),
     index("idx_statements_source_article").on(t.sourceArticleId),
   ],

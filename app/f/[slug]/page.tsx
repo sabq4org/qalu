@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import FigureAvatar from "@/components/FigureAvatar";
-import StatementCard, { formatArabicDate } from "@/components/StatementCard";
-import { getApprovedStatements, getFigureBySlug } from "@/services/figures";
+import StatementCard from "@/components/StatementCard";
+import { getApprovedStatements, getFigureBySlug, hasApprovedStatements } from "@/services/figures";
 
 export const revalidate = 300;
 
@@ -21,19 +21,23 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     const figure = await getFigureBySlug(decodeURIComponent(slug));
     if (!figure) return { title: "غير موجود" };
 
-    const statements = await getApprovedStatements(figure.id, { limit: 1 });
-    const indexable = figure.verified && statements.length > 0;
+    const [indexable, preview] = await Promise.all([
+      hasApprovedStatements(figure.id),
+      figure.bio
+        ? Promise.resolve(null)
+        : getApprovedStatements(figure.id, { limit: 1 }),
+    ]);
     const description =
       figure.bio ??
-      (statements[0]
-        ? `آخر تصريح: «${statements[0].text.slice(0, 160)}»`
+      (preview?.[0]
+        ? `آخر تصريح: «${preview[0].text.slice(0, 160)}»`
         : `تصريحات ${figure.name} الموثقة بالمصدر والتاريخ.`);
 
     const ogImage = figure.imageUrl ?? "/og.png";
     return {
       title: `${figure.name}${figure.title ? ` — ${figure.title}` : ""} | تصريحات موثقة`,
       description: description.slice(0, 220),
-      robots: indexable ? "index, follow" : "noindex, follow",
+      robots: figure.verified && indexable ? "index, follow" : "noindex, follow",
       alternates: { canonical: `${SITE_URL}/f/${encodeURIComponent(figure.slug)}` },
       openGraph: {
         title: `تصريحات ${figure.name} الموثقة`,
@@ -143,14 +147,13 @@ export default async function FigurePage({ params, searchParams }: PageProps) {
               const showYear = year !== null && year !== prevYear;
               return (
                 <div key={s.id} className="relative">
-                  {showYear && (
-                    <div className="relative py-2">
-                      <span className="absolute -right-[35px] top-1.5 flex h-5 items-center rounded-full bg-accent px-2 text-[11px] font-bold text-accent-contrast tabular">
-                        {year}
-                      </span>
-                    </div>
+                  {showYear ? (
+                    <span className="absolute -right-[35px] top-6 z-10 flex h-5 items-center rounded-full bg-accent px-2 text-[11px] font-bold text-accent-contrast tabular">
+                      {year}
+                    </span>
+                  ) : (
+                    <span className="absolute -right-[31px] top-7 h-3 w-3 rounded-full bg-accent" />
                   )}
-                  <span className="absolute -right-[31px] top-6 h-3 w-3 rounded-full bg-accent" />
                   <StatementCard
                     text={s.text}
                     statementDate={s.statementDate}
@@ -181,8 +184,7 @@ export default async function FigurePage({ params, searchParams }: PageProps) {
 
         {visible.length > 0 && (
           <p className="mt-8 text-xs text-muted text-center">
-            آخر تحديث للصفحة: {formatArabicDate(new Date())} — الملخصات والتصنيفات مولدة
-            آلياً؛ نص كل تصريح منقول حرفياً من مصدره.
+            الملخصات والتصنيفات مولدة آلياً؛ نص كل تصريح منقول حرفياً من مصدره.
           </p>
         )}
       </section>

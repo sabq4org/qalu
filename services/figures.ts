@@ -1,7 +1,11 @@
+import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { figures, statements, topics } from "@/db/schema";
 import { normalizeArabic, slugifyArabic } from "@/lib/arabic";
+
+const CACHE_REVALIDATE = 300;
 
 const approvedCountExpr = sql<number>`count(${statements.id}) filter (where ${statements.status} = 'approved')`;
 
@@ -9,26 +13,34 @@ const approvedCountExpr = sql<number>`count(${statements.id}) filter (where ${st
  * قائمة الشخصيات للعرض العام — الموثقة فقط.
  * غير الموثقة (المستخرجة آلياً) تعيش في لوحة المراجعة ولا تظهر للزوار أبداً.
  */
-export async function listFiguresWithCounts(opts: { limit?: number; offset?: number } = {}) {
-  const { limit = 24, offset = 0 } = opts;
-  return await db()
-    .select({
-      id: figures.id,
-      name: figures.name,
-      title: figures.title,
-      slug: figures.slug,
-      imageUrl: figures.imageUrl,
-      verified: figures.verified,
-      approvedCount: approvedCountExpr,
-    })
-    .from(figures)
-    .leftJoin(statements, eq(statements.figureId, figures.id))
-    .where(eq(figures.verified, true))
-    .groupBy(figures.id)
-    .orderBy(asc(figures.displayOrder), desc(approvedCountExpr))
-    .limit(limit)
-    .offset(offset);
-}
+export const listFiguresWithCounts = cache(
+  async (opts: { limit?: number; offset?: number } = {}) => {
+    const limit = opts.limit ?? 24;
+    const offset = opts.offset ?? 0;
+    return unstable_cache(
+      async () =>
+        db()
+          .select({
+            id: figures.id,
+            name: figures.name,
+            title: figures.title,
+            slug: figures.slug,
+            imageUrl: figures.imageUrl,
+            verified: figures.verified,
+            approvedCount: approvedCountExpr,
+          })
+          .from(figures)
+          .leftJoin(statements, eq(statements.figureId, figures.id))
+          .where(eq(figures.verified, true))
+          .groupBy(figures.id)
+          .orderBy(asc(figures.displayOrder), desc(approvedCountExpr))
+          .limit(limit)
+          .offset(offset),
+      ["figures-with-counts", String(limit), String(offset)],
+      { revalidate: CACHE_REVALIDATE, tags: ["figures"] },
+    )();
+  },
+);
 
 /** قائمة مبسطة لكل الشخصيات (لقوائم الإسناد في لوحة المراجعة) */
 export async function listFiguresBasic() {
@@ -38,60 +50,92 @@ export async function listFiguresBasic() {
     .orderBy(desc(figures.verified), figures.name);
 }
 
-export async function getFigureBySlug(slug: string) {
-  const [figure] = await db().select().from(figures).where(eq(figures.slug, slug)).limit(1);
-  return figure ?? null;
-}
+export const getFigureBySlug = cache(async (slug: string) => {
+  return unstable_cache(
+    async () => {
+      const [figure] = await db().select().from(figures).where(eq(figures.slug, slug)).limit(1);
+      return figure ?? null;
+    },
+    ["figure-by-slug", slug],
+    { revalidate: CACHE_REVALIDATE, tags: ["figures", `figure:${slug}`] },
+  )();
+});
+
+/** هل للشخصية تصريح معتمد واحد على الأقل — خفيف لـ metadata */
+export const hasApprovedStatements = cache(async (figureId: string) => {
+  return unstable_cache(
+    async () => {
+      const [row] = await db()
+        .select({ id: statements.id })
+        .from(statements)
+        .where(and(eq(statements.figureId, figureId), eq(statements.status, "approved")))
+        .limit(1);
+      return Boolean(row);
+    },
+    ["has-approved", figureId],
+    { revalidate: CACHE_REVALIDATE, tags: ["statements", `figure-statements:${figureId}`] },
+  )();
+});
 
 /** التصريحات المعتمدة لشخصية، الأحدث أولاً، مع موضوع كل تصريح */
-export async function getApprovedStatements(
-  figureId: string,
-  opts: { limit?: number; offset?: number } = {},
-) {
-  const { limit = 50, offset = 0 } = opts;
-  return await db()
-    .select({
-      id: statements.id,
-      text: statements.text,
-      context: statements.context,
-      aiSummary: statements.aiSummary,
-      statementDate: statements.statementDate,
-      sourceUrl: statements.sourceUrl,
-      sourceTitle: statements.sourceTitle,
-      sourceName: statements.sourceName,
-      topicName: topics.name,
-    })
-    .from(statements)
-    .leftJoin(topics, eq(statements.topicId, topics.id))
-    .where(and(eq(statements.figureId, figureId), eq(statements.status, "approved")))
-    .orderBy(desc(statements.statementDate))
-    .limit(limit)
-    .offset(offset);
-}
+export const getApprovedStatements = cache(
+  async (figureId: string, opts: { limit?: number; offset?: number } = {}) => {
+    const limit = opts.limit ?? 50;
+    const offset = opts.offset ?? 0;
+    return unstable_cache(
+      async () =>
+        db()
+          .select({
+            id: statements.id,
+            text: statements.text,
+            context: statements.context,
+            aiSummary: statements.aiSummary,
+            statementDate: statements.statementDate,
+            sourceUrl: statements.sourceUrl,
+            sourceTitle: statements.sourceTitle,
+            sourceName: statements.sourceName,
+            topicName: topics.name,
+          })
+          .from(statements)
+          .leftJoin(topics, eq(statements.topicId, topics.id))
+          .where(and(eq(statements.figureId, figureId), eq(statements.status, "approved")))
+          .orderBy(desc(statements.statementDate))
+          .limit(limit)
+          .offset(offset),
+      ["approved-statements", figureId, String(limit), String(offset)],
+      { revalidate: CACHE_REVALIDATE, tags: ["statements", `figure-statements:${figureId}`] },
+    )();
+  },
+);
 
 /** أحدث التصريحات المعتمدة عبر كل الشخصيات (للصفحة الرئيسية) */
-export async function latestApprovedStatements(limit = 12) {
-  return await db()
-    .select({
-      id: statements.id,
-      text: statements.text,
-      context: statements.context,
-      statementDate: statements.statementDate,
-      sourceUrl: statements.sourceUrl,
-      sourceTitle: statements.sourceTitle,
-      sourceName: statements.sourceName,
-      topicName: topics.name,
-      figureName: figures.name,
-      figureTitle: figures.title,
-      figureSlug: figures.slug,
-    })
-    .from(statements)
-    .innerJoin(figures, eq(statements.figureId, figures.id))
-    .leftJoin(topics, eq(statements.topicId, topics.id))
-    .where(eq(statements.status, "approved"))
-    .orderBy(desc(statements.statementDate))
-    .limit(limit);
-}
+export const latestApprovedStatements = cache(async (limit = 12) => {
+  return unstable_cache(
+    async () =>
+      db()
+        .select({
+          id: statements.id,
+          text: statements.text,
+          context: statements.context,
+          statementDate: statements.statementDate,
+          sourceUrl: statements.sourceUrl,
+          sourceTitle: statements.sourceTitle,
+          sourceName: statements.sourceName,
+          topicName: topics.name,
+          figureName: figures.name,
+          figureTitle: figures.title,
+          figureSlug: figures.slug,
+        })
+        .from(statements)
+        .innerJoin(figures, eq(statements.figureId, figures.id))
+        .leftJoin(topics, eq(statements.topicId, topics.id))
+        .where(eq(statements.status, "approved"))
+        .orderBy(desc(statements.statementDate))
+        .limit(limit),
+    ["latest-approved", String(limit)],
+    { revalidate: CACHE_REVALIDATE, tags: ["statements"] },
+  )();
+});
 
 /** إيجاد شخصية بالاسم المطبع أو إنشاؤها بحالة غير موثقة (يستخدمه worker الاستخراج) */
 export async function findOrCreateFigure(name: string, title: string | null) {

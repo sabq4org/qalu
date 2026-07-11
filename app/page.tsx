@@ -62,7 +62,7 @@ export default async function HomePage() {
         <h1 className="text-4xl font-bold mb-4">
           ماذا قالوا<span className="text-accent">؟</span>
         </h1>
-        <p className="text-sm font-semibold text-muted tracking-[0.3em] mb-6">
+        <p className="text-sm font-semibold text-muted mb-6">
           القول الفصل في التصريحات
         </p>
         <p className="text-muted max-w-2xl mx-auto leading-relaxed">

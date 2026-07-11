@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { requireStaff } from "@/auth";
 import { setFigureVerified } from "@/services/review";
 
@@ -23,6 +23,8 @@ export async function PATCH(
     }
     revalidatePath(`/f/${updated.slug}`);
     revalidatePath("/");
+    revalidateTag(`figure:${updated.slug}`, "max");
+    revalidateTag("figures", "max");
     return NextResponse.json({ figure: updated });
   } catch (err) {
     console.error("[api/admin/figures/:id]", err);
