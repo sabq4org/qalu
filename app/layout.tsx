@@ -67,12 +67,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </header>
         <main className="flex-1 mx-auto w-full max-w-5xl px-4 py-8">{children}</main>
         <footer className="border-t border-border bg-card">
-          <div className="mx-auto max-w-5xl px-4 py-6 text-sm text-muted flex flex-wrap gap-2 justify-between items-center">
-            <span>
-              © {new Date().getFullYear()} ماذا قالوا؟ — نرصد ما قيل، متى قيل، وممّن قيل، بدقة
-              وبلا تهويل.
-            </span>
-            <span>المصدر الصحفي: أرشيف صحيفة سبق</span>
+          <div className="mx-auto max-w-5xl px-4 py-6 text-sm text-muted">
+            © {new Date().getFullYear()} ماذا قالوا؟ — نرصد ما قيل، متى قيل، وممّن قيل، بدقة
+            وبلا تهويل.
           </div>
         </footer>
       </body>
