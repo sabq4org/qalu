@@ -17,7 +17,8 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
   name: text("name").notNull(),
-  role: text("role").notNull().default("reviewer"), // admin | reviewer
+  role: text("role").notNull().default("reviewer"), // admin | editor | reviewer
+  disabled: boolean("disabled").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -120,3 +121,29 @@ export const extractionRuns = pgTable(
 );
 
 export type ExtractionRun = typeof extractionRuns.$inferSelect;
+
+// ── إعدادات التشغيل (key/value) ───────────────────────────────────
+export const settings = pgTable("settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type Setting = typeof settings.$inferSelect;
+
+// ── سجل التدقيق ───────────────────────────────────────────────────
+export const auditLogs = pgTable(
+  "audit_logs",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    actorId: varchar("actor_id").references(() => users.id, { onDelete: "set null" }),
+    action: text("action").notNull(),
+    entityType: text("entity_type").notNull(),
+    entityId: text("entity_id"),
+    meta: text("meta"), // JSON نصي اختياري
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => [index("idx_audit_logs_created").on(t.createdAt)],
+);
+
+export type AuditLog = typeof auditLogs.$inferSelect;

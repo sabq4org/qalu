@@ -1,5 +1,5 @@
-import ReviewDashboard from "@/components/ReviewDashboard";
+import DashboardOverview from "@/components/DashboardOverview";
 
 export default function DashboardPage() {
-  return <ReviewDashboard />;
+  return <DashboardOverview />;
 }

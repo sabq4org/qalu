@@ -62,8 +62,16 @@ async function getCursor(): Promise<{ createdAt: Date | null; articleId: string 
   };
 }
 
-async function processArticle(article: SabqArticle, stats: RunStats): Promise<void> {
+async function processArticle(
+  article: SabqArticle,
+  stats: RunStats,
+  opts: { saudiGulfOnly?: boolean } = {},
+): Promise<void> {
   const plainContent = stripHtml(article.content).slice(0, MAX_CONTENT_CHARS);
+
+  const scopeHint = opts.saudiGulfOnly
+    ? "\n\nقيّد الاستخراج على شخصيات سعودية أو خليجية فقط (مسؤولون/قادة/متحدثون من دول الخليج). تجاهل غيرهم."
+    : "";
 
   const response = await openai.chat.completions.create({
     model: EXTRACTION_MODEL,
@@ -72,7 +80,7 @@ async function processArticle(article: SabqArticle, stats: RunStats): Promise<vo
     max_tokens: 2000,
     messages: [
       { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: buildUserPrompt(article.title, plainContent) },
+      { role: "user", content: buildUserPrompt(article.title, plainContent) + scopeHint },
     ],
   });
 
@@ -123,16 +131,36 @@ async function processArticle(article: SabqArticle, stats: RunStats): Promise<vo
 }
 
 export async function runExtractionBatch(): Promise<void> {
+  const { getSetting, getSettingBool, setSetting } = await import("../services/settings");
+
+  const runOnce = await getSettingBool("extraction.runOnce", false);
+  const enabled = await getSettingBool("extraction.enabled", true);
+  if (!enabled && !runOnce) {
+    console.log(`${LOG} الاستخراج معطّل (extraction.enabled=0) — تخطّي`);
+    return;
+  }
+  if (runOnce) {
+    await setSetting("extraction.runOnce", "0");
+    console.log(`${LOG} دفعة طارئة (runOnce)`);
+  }
+
+  const batchFromSettings = Number(await getSetting("extraction.batchSize", String(BATCH_SIZE)));
+  const limit = Number.isFinite(batchFromSettings) && batchFromSettings > 0
+    ? Math.min(batchFromSettings, 200)
+    : BATCH_SIZE;
+  const saudiGulfOnly = await getSettingBool("extraction.saudiGulfOnly", false);
+
   const cursor = await getCursor();
   console.log(
-    `${LOG} بدء دفعة — المؤشر: ${cursor.createdAt?.toISOString() ?? `آخر ${SINCE_DAYS} يوماً`}`,
+    `${LOG} بدء دفعة — المؤشر: ${cursor.createdAt?.toISOString() ?? `آخر ${SINCE_DAYS} يوماً`} · حجم=${limit}` +
+      (saudiGulfOnly ? " · سعودي/خليجي فقط" : ""),
   );
 
   const articles = await fetchArticleBatch({
     cursorCreatedAt: cursor.createdAt,
     cursorArticleId: cursor.articleId,
     sinceDays: SINCE_DAYS,
-    limit: BATCH_SIZE,
+    limit,
   });
 
   if (articles.length === 0) {
@@ -151,7 +179,7 @@ export async function runExtractionBatch(): Promise<void> {
   for (const article of articles) {
     stats.articlesScanned++;
     try {
-      await processArticle(article, stats);
+      await processArticle(article, stats, { saudiGulfOnly });
     } catch (err) {
       // مقال معطوب لا يوقف الدفعة ولا يجمّد المؤشر
       stats.failures++;
@@ -170,6 +198,7 @@ export async function runExtractionBatch(): Promise<void> {
     rejectedVerbatim: stats.rejectedVerbatim,
     duplicates: stats.duplicates,
     failures: stats.failures,
+    notes: saudiGulfOnly ? "saudiGulfOnly" : null,
   });
 
   console.log(

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { eq } from "drizzle-orm";
-import { requireStaff } from "@/auth";
+import { requireEditor } from "@/auth";
 import { db } from "@/db";
 import { figures } from "@/db/schema";
+import { writeAudit } from "@/services/audit";
 import { isStorageConfigured, mediaUrl, uploadObject } from "@/services/objectStorage";
 
 const MAX_BYTES = 2_500_000; // ~2.5MB
@@ -17,7 +18,7 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const user = await requireStaff();
+  const user = await requireEditor();
   if (!user) return NextResponse.json({ message: "غير مصرح" }, { status: 401 });
 
   if (!isStorageConfigured()) {
@@ -55,6 +56,14 @@ export async function POST(
       .set({ imageUrl, updatedAt: new Date() })
       .where(eq(figures.id, id))
       .returning();
+
+    await writeAudit({
+      actorId: user.id,
+      action: "figure.image",
+      entityType: "figure",
+      entityId: id,
+      meta: { key },
+    });
 
     revalidatePath(`/f/${updated.slug}`);
     revalidatePath("/");

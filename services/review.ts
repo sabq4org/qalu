@@ -1,11 +1,45 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, gte, ilike, or, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { figures, statements, topics } from "@/db/schema";
 import { normalizeArabic } from "@/lib/arabic";
 
-/** قائمة التصريحات بانتظار المراجعة — الأعلى ثقة أولاً ليعتمد المحرر الواضح بسرعة */
-export async function listPendingStatements(opts: { limit?: number; offset?: number } = {}) {
+export type StatementListStatus = "pending" | "rejected";
+
+export type ListStatementsOpts = {
+  limit?: number;
+  offset?: number;
+  status?: StatementListStatus;
+  figureId?: string;
+  topicId?: string;
+  minConfidence?: number;
+  q?: string;
+  sourceName?: string;
+};
+
+function buildStatementFilters(opts: ListStatementsOpts): SQL | undefined {
+  const status = opts.status ?? "pending";
+  const filters: SQL[] = [eq(statements.status, status)];
+  if (opts.figureId) filters.push(eq(statements.figureId, opts.figureId));
+  if (opts.topicId) filters.push(eq(statements.topicId, opts.topicId));
+  if (opts.minConfidence != null && !Number.isNaN(opts.minConfidence)) {
+    filters.push(gte(statements.confidence, opts.minConfidence));
+  }
+  if (opts.sourceName?.trim()) {
+    filters.push(ilike(statements.sourceName, `%${opts.sourceName.trim()}%`));
+  }
+  if (opts.q?.trim()) {
+    const pattern = `%${opts.q.trim()}%`;
+    filters.push(
+      or(ilike(statements.text, pattern), ilike(statements.context, pattern), ilike(figures.name, pattern))!,
+    );
+  }
+  return and(...filters);
+}
+
+/** قائمة تصريحات للمراجعة — pending أو rejected مع فلاتر */
+export async function listPendingStatements(opts: ListStatementsOpts = {}) {
   const { limit = 50, offset = 0 } = opts;
+  const where = buildStatementFilters(opts);
   return await db()
     .select({
       id: statements.id,
@@ -14,7 +48,10 @@ export async function listPendingStatements(opts: { limit?: number; offset?: num
       statementDate: statements.statementDate,
       sourceUrl: statements.sourceUrl,
       sourceTitle: statements.sourceTitle,
+      sourceName: statements.sourceName,
       confidence: statements.confidence,
+      status: statements.status,
+      rejectionReason: statements.rejectionReason,
       createdAt: statements.createdAt,
       figureId: figures.id,
       figureName: figures.name,
@@ -26,17 +63,19 @@ export async function listPendingStatements(opts: { limit?: number; offset?: num
     .from(statements)
     .innerJoin(figures, eq(statements.figureId, figures.id))
     .leftJoin(topics, eq(statements.topicId, topics.id))
-    .where(eq(statements.status, "pending"))
+    .where(where)
     .orderBy(sql`${statements.confidence} DESC NULLS LAST`, desc(statements.createdAt))
     .limit(limit)
     .offset(offset);
 }
 
-export async function pendingCount(): Promise<number> {
+export async function pendingCount(opts: Omit<ListStatementsOpts, "limit" | "offset"> = {}): Promise<number> {
+  const where = buildStatementFilters({ ...opts, status: opts.status ?? "pending" });
   const [row] = await db()
     .select({ count: sql<number>`count(*)::int` })
     .from(statements)
-    .where(eq(statements.status, "pending"));
+    .innerJoin(figures, eq(statements.figureId, figures.id))
+    .where(where);
   return row?.count ?? 0;
 }
 
@@ -61,17 +100,50 @@ export async function rejectStatement(id: string, reviewerId: string, reason?: s
   return updated ?? null;
 }
 
-/** تصحيح الإسناد: تغيير الشخصية و/أو الموضوع لتصريح */
+/** استرجاع مرفوض → معلّق */
+export async function restoreStatement(id: string, reviewerId: string) {
+  const [updated] = await db()
+    .update(statements)
+    .set({
+      status: "pending",
+      reviewedBy: reviewerId,
+      reviewedAt: new Date(),
+      rejectionReason: null,
+    })
+    .where(eq(statements.id, id))
+    .returning();
+  return updated ?? null;
+}
+
+/** تصحيح الإسناد / حقول قبل الاعتماد: شخصية، موضوع، سياق */
 export async function reassignStatement(
   id: string,
-  changes: { figureId?: string; topicId?: string | null },
+  changes: { figureId?: string; topicId?: string | null; context?: string | null },
 ) {
   const set: Record<string, unknown> = {};
   if (changes.figureId) set.figureId = changes.figureId;
   if (changes.topicId !== undefined) set.topicId = changes.topicId;
+  if (changes.context !== undefined) set.context = changes.context;
   if (Object.keys(set).length === 0) return null;
   const [updated] = await db().update(statements).set(set).where(eq(statements.id, id)).returning();
   return updated ?? null;
+}
+
+export async function bulkReview(
+  ids: string[],
+  action: "approve" | "reject" | "restore",
+  reviewerId: string,
+  reason?: string,
+) {
+  const results: string[] = [];
+  for (const id of ids) {
+    let updated = null;
+    if (action === "approve") updated = await approveStatement(id, reviewerId);
+    else if (action === "reject") updated = await rejectStatement(id, reviewerId, reason);
+    else updated = await restoreStatement(id, reviewerId);
+    if (updated) results.push(id);
+  }
+  return results;
 }
 
 export async function setFigureVerified(id: string, verified: boolean) {
