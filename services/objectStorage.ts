@@ -28,8 +28,35 @@ export function getStorageConfig(): StorageConfig | null {
   const region =
     process.env.S3_REGION ?? process.env.BUCKET_REGION ?? process.env.REGION ?? "auto";
 
-  if (!endpoint || !bucket || !accessKeyId || !secretAccessKey) return null;
-  return { endpoint, bucket, accessKeyId, secretAccessKey, region };
+  if (!endpoint?.trim() || !bucket?.trim() || !accessKeyId?.trim() || !secretAccessKey?.trim()) {
+    return null;
+  }
+  return {
+    endpoint: endpoint.trim(),
+    bucket: bucket.trim(),
+    accessKeyId: accessKeyId.trim(),
+    secretAccessKey: secretAccessKey.trim(),
+    region: region.trim() || "auto",
+  };
+}
+
+/** أسماء المتغيرات الناقصة — للمساعدة في التشخيص دون طباعة القيم */
+export function missingStorageEnvNames(): string[] {
+  const pairs: [string, string | undefined][] = [
+    ["S3_ENDPOINT|ENDPOINT", process.env.S3_ENDPOINT ?? process.env.BUCKET_ENDPOINT ?? process.env.ENDPOINT],
+    ["S3_BUCKET|BUCKET", process.env.S3_BUCKET ?? process.env.BUCKET],
+    [
+      "S3_ACCESS_KEY_ID|ACCESS_KEY_ID",
+      process.env.S3_ACCESS_KEY_ID ?? process.env.BUCKET_ACCESS_KEY_ID ?? process.env.ACCESS_KEY_ID,
+    ],
+    [
+      "S3_SECRET_ACCESS_KEY|SECRET_ACCESS_KEY",
+      process.env.S3_SECRET_ACCESS_KEY ??
+        process.env.BUCKET_SECRET_ACCESS_KEY ??
+        process.env.SECRET_ACCESS_KEY,
+    ],
+  ];
+  return pairs.filter(([, v]) => !v?.trim()).map(([name]) => name);
 }
 
 export function isStorageConfigured(): boolean {

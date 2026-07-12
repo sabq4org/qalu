@@ -116,11 +116,19 @@ export default function ReviewDashboard() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <h1 className="text-xl font-bold">تصريحات بانتظار المراجعة ({total})</h1>
-        <button onClick={() => void load()} className="text-sm text-accent hover:underline">
-          تحديث
-        </button>
+        <div className="flex items-center gap-3">
+          <a
+            href="/dashboard/statements/new"
+            className="text-sm font-semibold text-accent hover:underline"
+          >
+            + إدخال تصريح
+          </a>
+          <button onClick={() => void load()} className="text-sm text-accent hover:underline">
+            تحديث
+          </button>
+        </div>
       </div>
 
       {error && (

@@ -20,12 +20,15 @@ async function main() {
   const { eq } = await import("drizzle-orm");
   const { db } = await import("../db");
   const { figures } = await import("../db/schema");
-  const { isStorageConfigured, mediaUrl, uploadObject } = await import(
+  const { isStorageConfigured, mediaUrl, missingStorageEnvNames, uploadObject } = await import(
     "../services/objectStorage"
   );
 
   if (!isStorageConfigured()) {
+    const missing = missingStorageEnvNames();
     console.error("S3 غير مضبوط — أضف المتغيرات من Railway Bucket إلى .env.local");
+    if (missing.length) console.error("ناقص:", missing.join(", "));
+    console.error("المطلوب عادة: S3_ACCESS_KEY_ID و S3_SECRET_ACCESS_KEY (بعد ملء Endpoint/Bucket)");
     process.exit(1);
   }
 

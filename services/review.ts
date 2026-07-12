@@ -87,6 +87,138 @@ export async function listTopics() {
   return await db().select().from(topics).orderBy(topics.name);
 }
 
+export type ManualStatementInput = {
+  /** إما شخصية موجودة أو اسم جديد */
+  figureId?: string;
+  figureName?: string;
+  figureTitle?: string | null;
+  /** توثيق الشخصية فوراً عند الإنشاء/الإدخال */
+  verifyFigure?: boolean;
+  text: string;
+  context?: string | null;
+  statementDate: Date | string;
+  topicId?: string | null;
+  topicName?: string | null;
+  sourceName: string;
+  sourceUrl: string;
+  sourceTitle?: string | null;
+  enteredBy: string;
+};
+
+export type ManualStatementResult =
+  | { ok: true; statement: typeof statements.$inferSelect; figureSlug: string; duplicate?: false }
+  | { ok: false; reason: "duplicate" | "validation"; message: string };
+
+/**
+ * إدخال يدوي موثق — يُعتمد فوراً ويسجّل المُدخل في reviewedBy.
+ * يقتل الحاجة لسكربتات seed للمحتوى المنتقى.
+ */
+export async function createManualStatement(
+  input: ManualStatementInput,
+): Promise<ManualStatementResult> {
+  const text = input.text?.trim() ?? "";
+  const sourceUrl = input.sourceUrl?.trim() ?? "";
+  const sourceName = input.sourceName?.trim() ?? "";
+  if (!text || text.length < 10) {
+    return { ok: false, reason: "validation", message: "نص التصريح قصير جداً" };
+  }
+  if (!sourceUrl || !/^https?:\/\//i.test(sourceUrl)) {
+    return { ok: false, reason: "validation", message: "رابط المصدر غير صالح" };
+  }
+  if (!sourceName) {
+    return { ok: false, reason: "validation", message: "اسم المصدر مطلوب" };
+  }
+
+  const date =
+    input.statementDate instanceof Date
+      ? input.statementDate
+      : new Date(input.statementDate);
+  if (Number.isNaN(date.getTime())) {
+    return { ok: false, reason: "validation", message: "تاريخ التصريح غير صالح" };
+  }
+
+  let figure =
+    input.figureId != null
+      ? (
+          await db()
+            .select()
+            .from(figures)
+            .where(eq(figures.id, input.figureId))
+            .limit(1)
+        )[0]
+      : null;
+
+  if (!figure) {
+    const name = input.figureName?.trim() ?? "";
+    if (!name) {
+      return { ok: false, reason: "validation", message: "اختر شخصية أو أدخل اسماً جديداً" };
+    }
+    const { findOrCreateFigure } = await import("@/services/figures");
+    figure = await findOrCreateFigure(name, input.figureTitle ?? null);
+    if (input.figureTitle?.trim()) {
+      await db()
+        .update(figures)
+        .set({ title: input.figureTitle.trim(), updatedAt: new Date() })
+        .where(eq(figures.id, figure.id));
+      figure = { ...figure, title: input.figureTitle.trim() };
+    }
+  }
+
+  if (input.verifyFigure && !figure.verified) {
+    const [verified] = await db()
+      .update(figures)
+      .set({ verified: true, updatedAt: new Date() })
+      .where(eq(figures.id, figure.id))
+      .returning();
+    if (verified) figure = verified;
+  }
+
+  let topicId: string | null = input.topicId ?? null;
+  if (!topicId && input.topicName?.trim()) {
+    const topic = await findOrCreateTopic(input.topicName.trim());
+    topicId = topic?.id ?? null;
+  }
+
+  const { dedupeHash } = await import("@/lib/arabic");
+  const hash = dedupeHash(text, figure.normalizedName);
+
+  const [existing] = await db()
+    .select({ id: statements.id })
+    .from(statements)
+    .where(eq(statements.dedupeHash, hash))
+    .limit(1);
+  if (existing) {
+    return { ok: false, reason: "duplicate", message: "تصريح مطابق موجود مسبقاً" };
+  }
+
+  const [created] = await db()
+    .insert(statements)
+    .values({
+      figureId: figure.id,
+      topicId,
+      text,
+      context: input.context?.trim() || null,
+      statementDate: date,
+      sourceArticleId: "manual-entry",
+      sourceUrl,
+      sourceTitle: input.sourceTitle?.trim() || null,
+      sourceName,
+      status: "approved",
+      confidence: 1,
+      dedupeHash: hash,
+      extractionModel: "manual",
+      reviewedBy: input.enteredBy,
+      reviewedAt: new Date(),
+    })
+    .returning();
+
+  if (!created) {
+    return { ok: false, reason: "validation", message: "تعذر حفظ التصريح" };
+  }
+
+  return { ok: true, statement: created, figureSlug: figure.slug };
+}
+
 /** إيجاد موضوع أو إنشاؤه (يستخدمه worker الاستخراج) */
 export async function findOrCreateTopic(name: string) {
   const normalized = normalizeArabic(name);
