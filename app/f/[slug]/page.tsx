@@ -116,25 +116,29 @@ export default async function FigurePage({ params, searchParams }: PageProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <section className="relative overflow-hidden rounded-2xl border border-border bg-card p-6">
+      <section className="relative overflow-hidden rounded-xl sm:rounded-2xl border border-border bg-card p-4 sm:p-6">
         <div className="absolute top-0 right-0 left-0 h-0.5 bg-gradient-to-l from-transparent via-accent to-transparent" />
-        <div className="flex flex-col sm:flex-row items-start gap-5">
-          <FigureAvatar name={figure.name} imageUrl={figure.imageUrl} size={104} />
-          <div className="flex-1">
-            <h1 className="text-3xl font-bold">
+        <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-5">
+          <FigureAvatar name={figure.name} imageUrl={figure.imageUrl} size={80} />
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl sm:text-3xl font-bold leading-snug">
               {figure.name}
               {figure.verified && (
-                <span className="text-accent text-xl mr-2" title="شخصية موثقة">✓ موثقة</span>
+                <span className="text-accent text-sm sm:text-xl mr-2 font-semibold" title="شخصية موثقة">
+                  ✓ موثقة
+                </span>
               )}
             </h1>
-            {figure.title && <p className="text-muted mt-2 text-lg">{figure.title}</p>}
+            {figure.title && (
+              <p className="text-muted mt-1.5 sm:mt-2 text-sm sm:text-lg leading-snug">{figure.title}</p>
+            )}
             {figure.bio && <FigureBio bio={figure.bio} />}
           </div>
         </div>
       </section>
 
       <section>
-        <h2 className="text-2xl font-bold mb-4">التصريحات الموثقة</h2>
+        <h2 className="text-lg sm:text-2xl font-bold mb-3 sm:mb-4">التصريحات الموثقة</h2>
         {visible.length === 0 ? (
           <p className="text-muted">لا تصريحات معتمدة لهذه الشخصية بعد.</p>
         ) : (

@@ -11,10 +11,12 @@ export default function FigureAvatar({
   name,
   imageUrl,
   size = 72,
+  className = "",
 }: {
   name: string;
   imageUrl?: string | null;
   size?: number;
+  className?: string;
 }) {
   const [failed, setFailed] = useState(false);
   const initial = name.trim().charAt(0);
@@ -23,7 +25,7 @@ export default function FigureAvatar({
     return (
       <span
         aria-hidden
-        className="inline-flex items-center justify-center rounded-full bg-accent-soft text-accent font-bold shrink-0 ring-2 ring-accent/40"
+        className={`inline-flex items-center justify-center rounded-full bg-accent-soft text-accent font-bold shrink-0 ring-2 ring-accent/40 ${className}`}
         style={{ width: size, height: size, fontSize: Math.round(size * 0.42) }}
       >
         {initial}
@@ -37,7 +39,7 @@ export default function FigureAvatar({
       alt={name}
       width={size}
       height={size}
-      className="rounded-full object-cover shrink-0 ring-2 ring-accent"
+      className={`rounded-full object-cover shrink-0 ring-2 ring-accent ${className}`}
       style={{ width: size, height: size }}
       onError={() => setFailed(true)}
     />

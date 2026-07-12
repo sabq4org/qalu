@@ -33,10 +33,10 @@ export default function FigureBio({ bio }: { bio: string }) {
   }, [bio, expanded]);
 
   return (
-    <div className="mt-4">
+    <div className="mt-3 sm:mt-4">
       <p
         ref={textRef}
-        className={`leading-relaxed ${
+        className={`text-sm sm:text-base leading-relaxed ${
           expanded ? "" : "line-clamp-2 sm:line-clamp-none"
         }`}
       >

@@ -52,20 +52,20 @@ export default async function HomePage() {
   const { figures, statements } = await loadHomeData();
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-8 sm:space-y-12">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd) }}
       />
-      <section className="relative overflow-hidden rounded-2xl border border-border bg-card text-center py-14 px-8">
+      <section className="relative overflow-hidden rounded-xl sm:rounded-2xl border border-border bg-card text-center py-8 sm:py-14 px-5 sm:px-8">
         <div className="absolute top-0 right-0 left-0 h-0.5 bg-gradient-to-l from-transparent via-accent to-transparent" />
-        <h1 className="text-4xl font-bold mb-4">
+        <h1 className="text-2xl sm:text-4xl font-bold mb-3 sm:mb-4">
           ماذا قالوا<span className="text-accent">؟</span>
         </h1>
-        <p className="text-sm font-semibold text-muted mb-6">
+        <p className="text-xs sm:text-sm font-semibold text-muted mb-4 sm:mb-6">
           القول الفصل في التصريحات
         </p>
-        <p className="text-muted max-w-2xl mx-auto leading-relaxed">
+        <p className="text-sm sm:text-base text-muted max-w-2xl mx-auto leading-relaxed">
           نرصد ما قيل، متى قيل، وممّن قيل — بدقة وبلا تهويل. تصريحات الوزراء والمسؤولين
           والرياضيين ورجال الأعمال كما وردت حرفياً في الصحافة، كل تصريح برابط مقاله الأصلي
           وتاريخه، بلا اجتزاء ولا إعادة صياغة.
@@ -74,23 +74,23 @@ export default async function HomePage() {
 
       {figures.length > 0 && (
         <section>
-          <h2 className="text-2xl font-bold mb-4">الشخصيات</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <h2 className="text-lg sm:text-2xl font-bold mb-3 sm:mb-4">الشخصيات</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
             {figures.map((f) => (
               <Link
                 key={f.id}
                 href={`/f/${encodeURIComponent(f.slug)}`}
-                className="rounded-xl border border-border bg-card p-4 text-center hover:border-accent transition-colors"
+                className="rounded-xl border border-border bg-card p-3 sm:p-4 text-center hover:border-accent transition-colors"
               >
-                <div className="mb-3 flex justify-center">
-                  <FigureAvatar name={f.name} imageUrl={f.imageUrl} size={72} />
+                <div className="mb-2 sm:mb-3 flex justify-center">
+                  <FigureAvatar name={f.name} imageUrl={f.imageUrl} size={64} />
                 </div>
-                <div className="font-bold">
+                <div className="text-sm sm:text-base font-bold leading-snug">
                   {f.name}
                   {f.verified && <span className="text-accent mr-1" title="موثقة">✓</span>}
                 </div>
-                {f.title && <div className="text-sm text-muted mt-1">{f.title}</div>}
-                <div className="text-xs text-muted mt-2">{f.approvedCount} تصريحاً</div>
+                {f.title && <div className="text-xs sm:text-sm text-muted mt-1 leading-snug">{f.title}</div>}
+                <div className="text-[11px] sm:text-xs text-muted mt-1.5 sm:mt-2">{f.approvedCount} تصريحاً</div>
               </Link>
             ))}
           </div>
@@ -98,7 +98,7 @@ export default async function HomePage() {
       )}
 
       <section>
-        <h2 className="text-2xl font-bold mb-4">أحدث التصريحات</h2>
+        <h2 className="text-lg sm:text-2xl font-bold mb-3 sm:mb-4">أحدث التصريحات</h2>
         {statements.length === 0 ? (
           <p className="text-muted">لا تصريحات معتمدة بعد — الأرشيف قيد البناء.</p>
         ) : (

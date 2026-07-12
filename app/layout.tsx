@@ -51,14 +51,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <header className="border-b border-border bg-card">
           <div className="mx-auto max-w-5xl px-4 py-4 flex items-center justify-between">
             <Link href="/" aria-label="ماذا قالوا — الرئيسية">
-              <BrandMark size={38} />
+              <BrandMark size={34} />
             </Link>
             <p className="text-sm text-muted hidden sm:block">
               القول الفصل في التصريحات
             </p>
           </div>
         </header>
-        <main className="flex-1 mx-auto w-full max-w-5xl px-4 py-8">{children}</main>
+        <main className="flex-1 mx-auto w-full max-w-5xl px-4 py-5 sm:py-8">{children}</main>
         <footer className="border-t border-border bg-card">
           <div className="mx-auto max-w-5xl px-4 py-6 text-sm text-muted">
             © {new Date().getFullYear()} ماذا قالوا؟ — نرصد ما قيل، متى قيل، وممّن قيل، بدقة
