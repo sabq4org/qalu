@@ -106,6 +106,7 @@ export default async function HomePage() {
             {statements.map((s) => (
               <StatementCard
                 key={s.id}
+                id={s.id}
                 text={s.text}
                 statementDate={s.statementDate}
                 sourceUrl={s.sourceUrl}

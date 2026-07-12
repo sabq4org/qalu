@@ -88,6 +88,10 @@ export const statements = pgTable(
     reviewedBy: varchar("reviewed_by").references(() => users.id),
     reviewedAt: timestamp("reviewed_at"),
     rejectionReason: text("rejection_reason"),
+    /** رادار الوعود: promise | stance | denial | figure | general */
+    statementKind: text("statement_kind").default("general"),
+    /** للوعود: open | fulfilled | broken | unclear */
+    promiseStatus: text("promise_status"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (t) => [
@@ -96,6 +100,7 @@ export const statements = pgTable(
     index("idx_statements_figure_status_date").on(t.figureId, t.status, t.statementDate),
     index("idx_statements_status_created").on(t.status, t.createdAt),
     index("idx_statements_source_article").on(t.sourceArticleId),
+    index("idx_statements_kind").on(t.statementKind),
   ],
 );
 
@@ -183,3 +188,80 @@ export const statementEmbeddings = pgTable("statement_embeddings", {
 });
 
 export type StatementEmbedding = typeof statementEmbeddings.$inferSelect;
+
+// ── أزواج تناقض مرشّحة/مؤكدة ─────────────────────────────────────
+export const contradictionPairs = pgTable(
+  "contradiction_pairs",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    statementAId: varchar("statement_a_id")
+      .references(() => statements.id, { onDelete: "cascade" })
+      .notNull(),
+    statementBId: varchar("statement_b_id")
+      .references(() => statements.id, { onDelete: "cascade" })
+      .notNull(),
+    figureId: varchar("figure_id")
+      .references(() => figures.id, { onDelete: "cascade" })
+      .notNull(),
+    similarity: real("similarity"),
+    explanation: text("explanation"),
+    status: text("status").notNull().default("candidate"), // candidate | confirmed | dismissed
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex("idx_contradiction_pair_unique").on(t.statementAId, t.statementBId),
+    index("idx_contradiction_figure").on(t.figureId),
+  ],
+);
+
+export type ContradictionPair = typeof contradictionPairs.$inferSelect;
+
+// ── نشرة المساءلة الأسبوعية ───────────────────────────────────────
+export const weeklyDigests = pgTable(
+  "weekly_digests",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    weekStart: timestamp("week_start").notNull(),
+    title: text("title").notNull(),
+    summary: text("summary").notNull(),
+    payload: text("payload").notNull(), // JSON: highlights, contradictions, promises
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex("idx_weekly_digests_week").on(t.weekStart)],
+);
+
+export type WeeklyDigest = typeof weeklyDigests.$inferSelect;
+
+// ── مفاتيح API للـ B2B ────────────────────────────────────────────
+export const apiKeys = pgTable("api_keys", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  keyPrefix: text("key_prefix").notNull(),
+  keyHash: text("key_hash").notNull(),
+  enabled: boolean("enabled").notNull().default(true),
+  webhookUrl: text("webhook_url"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  lastUsedAt: timestamp("last_used_at"),
+});
+
+export type ApiKey = typeof apiKeys.$inferSelect;
+
+// ── فحوصات الشاهد (تفريغ ↔ تصريح) ─────────────────────────────────
+export const witnessChecks = pgTable(
+  "witness_checks",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    statementId: varchar("statement_id")
+      .references(() => statements.id, { onDelete: "cascade" })
+      .notNull(),
+    transcript: text("transcript").notNull(),
+    mediaUrl: text("media_url"),
+    matchScore: real("match_score"),
+    verdict: text("verdict").notNull(), // match | partial | mismatch
+    notes: text("notes"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => [index("idx_witness_statement").on(t.statementId)],
+);
+
+export type WitnessCheck = typeof witnessChecks.$inferSelect;

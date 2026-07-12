@@ -167,6 +167,7 @@ export default async function FigurePage({ params, searchParams }: PageProps) {
                     sourceName={s.sourceName}
                     context={s.context}
                     topicName={s.topicName}
+                    id={s.id}
                   />
                 </div>
               );

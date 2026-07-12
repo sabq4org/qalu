@@ -1,5 +1,6 @@
 import CloudflareAnalytics from "@/components/CloudflareAnalytics";
 import HeaderSearch from "@/components/HeaderSearch";
+import SiteNav from "@/components/SiteNav";
 import type { Metadata } from "next";
 import { IBM_Plex_Sans_Arabic } from "next/font/google";
 import Link from "next/link";
@@ -59,9 +60,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </header>
         <main className="flex-1 mx-auto w-full max-w-5xl px-4 py-5 sm:py-8">{children}</main>
         <footer className="border-t border-border bg-card">
-          <div className="mx-auto max-w-5xl px-4 py-6 text-sm text-muted">
-            © {new Date().getFullYear()} ماذا قالوا؟ — نرصد ما قيل، متى قيل، وممّن قيل، بدقة
-            وبلا تهويل.
+          <div className="mx-auto max-w-5xl px-4 py-6 space-y-3">
+            <SiteNav />
+            <div className="text-sm text-muted">
+              © {new Date().getFullYear()} ماذا قالوا؟ — نرصد ما قيل، متى قيل، وممّن قيل، بدقة
+              وبلا تهويل.
+            </div>
           </div>
         </footer>
       </body>

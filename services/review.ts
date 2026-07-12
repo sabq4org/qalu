@@ -90,7 +90,9 @@ export async function approveStatement(id: string, reviewerId: string) {
     .returning();
   if (updated) {
     const { indexStatementInBackground } = await import("@/services/embeddings");
+    const { classifyInBackground } = await import("@/services/intelligence");
     indexStatementInBackground(updated.id);
+    classifyInBackground(updated.id);
   }
   return updated ?? null;
 }
@@ -301,7 +303,9 @@ export async function createManualStatement(
   }
 
   const { indexStatementInBackground } = await import("@/services/embeddings");
+  const { classifyInBackground } = await import("@/services/intelligence");
   indexStatementInBackground(created.id);
+  classifyInBackground(created.id);
 
   return { ok: true, statement: created, figureSlug: figure.slug };
 }

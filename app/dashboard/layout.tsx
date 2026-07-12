@@ -58,8 +58,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
           {canEdit && <NavLink href="/dashboard/figures">الشخصيات</NavLink>}
           {canEdit && <NavLink href="/dashboard/topics">المواضيع</NavLink>}
           {canEdit && <NavLink href="/dashboard/publish">بطاقات / إكس</NavLink>}
+          {canEdit && <NavLink href="/dashboard/digest">مساءلة الأسبوع</NavLink>}
+          {canEdit && <NavLink href="/dashboard/witness">الشاهد</NavLink>}
           {canEdit && <NavLink href="/dashboard/extraction">الاستخراج</NavLink>}
           {canEdit && <NavLink href="/dashboard/sources">المصادر</NavLink>}
+          {isAdmin && <NavLink href="/dashboard/keys">API</NavLink>}
           {isAdmin && <NavLink href="/dashboard/users">المستخدمون</NavLink>}
         </nav>
       </div>

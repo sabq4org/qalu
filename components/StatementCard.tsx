@@ -6,6 +6,7 @@ export function formatArabicDate(date: Date | string | null): string {
 }
 
 export interface StatementCardProps {
+  id?: string;
   text: string;
   statementDate: Date | string | null;
   sourceUrl: string;
@@ -70,6 +71,22 @@ export default function StatementCard(props: StatementCardProps) {
         >
           المصدر: {props.sourceName ?? "صحيفة سبق"} ↗
         </a>
+        {props.id && (
+          <Link
+            href={`/contradictions/${props.id}`}
+            className="text-muted hover:text-accent font-semibold"
+          >
+            تناقض؟
+          </Link>
+        )}
+        {props.id && (
+          <Link
+            href={`/ask`}
+            className="text-muted hover:text-accent font-semibold hidden sm:inline"
+          >
+            اسأل الأرشيف
+          </Link>
+        )}
       </div>
     </article>
   );
