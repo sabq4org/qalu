@@ -115,12 +115,35 @@ export const extractionRuns = pgTable(
     rejectedVerbatim: integer("rejected_verbatim").notNull().default(0),
     duplicates: integer("duplicates").notNull().default(0),
     failures: integer("failures").notNull().default(0),
+    /** تقدير تقريبي لتكلفة OpenAI بالدولار لهذه الدفعة */
+    estimatedCostUsd: real("estimated_cost_usd"),
     notes: text("notes"),
   },
   (t) => [index("idx_extraction_runs_started").on(t.startedAt)],
 );
 
 export type ExtractionRun = typeof extractionRuns.$inferSelect;
+
+// ── مصادر الاستخراج (RSS / أرشيف) ─────────────────────────────────
+export const sources = pgTable(
+  "sources",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    name: text("name").notNull(),
+    slug: text("slug").notNull().unique(),
+    rssUrl: text("rss_url"),
+    enabled: boolean("enabled").notNull().default(true),
+    lastFetchedAt: timestamp("last_fetched_at"),
+    articlesPulled: integer("articles_pulled").notNull().default(0),
+    statementsExtracted: integer("statements_extracted").notNull().default(0),
+    notes: text("notes"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (t) => [index("idx_sources_enabled").on(t.enabled)],
+);
+
+export type Source = typeof sources.$inferSelect;
 
 // ── إعدادات التشغيل (key/value) ───────────────────────────────────
 export const settings = pgTable("settings", {

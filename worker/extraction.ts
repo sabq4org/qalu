@@ -198,8 +198,20 @@ export async function runExtractionBatch(): Promise<void> {
     rejectedVerbatim: stats.rejectedVerbatim,
     duplicates: stats.duplicates,
     failures: stats.failures,
+    // تقدير: ~2.5k tokens إدخال + 500 إخراج لكل مقال × أسعار gpt-4o-mini التقريبية
+    estimatedCostUsd:
+      Math.round(
+        (stats.articlesScanned * (2500 * 0.15 + 500 * 0.6)) / 1_000_000 * 10000,
+      ) / 10000,
     notes: saudiGulfOnly ? "saudiGulfOnly" : null,
   });
+
+  try {
+    const { bumpSabqSourceStats } = await import("../services/sourcesAdmin");
+    await bumpSabqSourceStats(stats.extracted, stats.articlesScanned);
+  } catch (err) {
+    console.warn(`${LOG} تعذر تحديث إحصاءات المصادر:`, err instanceof Error ? err.message : err);
+  }
 
   console.log(
     `${LOG} انتهت الدفعة: ${stats.articlesScanned} مقالاً، ${stats.extracted} تصريحاً جديداً، ` +

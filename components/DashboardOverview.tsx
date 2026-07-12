@@ -131,15 +131,21 @@ export default function DashboardOverview() {
         )}
       </div>
 
-      <div className="flex flex-wrap gap-3 text-sm">
+        <div className="flex flex-wrap gap-3 text-sm">
         <Link href="/dashboard/statements/new" className="text-accent hover:underline font-semibold">
           + إدخال تصريح
+        </Link>
+        <Link href="/dashboard/publish" className="text-accent hover:underline">
+          بطاقات / إكس
         </Link>
         <Link href="/dashboard/figures" className="text-accent hover:underline">
           الشخصيات
         </Link>
         <Link href="/dashboard/topics" className="text-accent hover:underline">
           المواضيع
+        </Link>
+        <Link href="/dashboard/sources" className="text-accent hover:underline">
+          المصادر
         </Link>
       </div>
     </div>

@@ -18,6 +18,7 @@ interface Run {
   rejectedVerbatim: number;
   duplicates: number;
   failures: number;
+  estimatedCostUsd?: number | null;
   notes: string | null;
 }
 
@@ -168,6 +169,34 @@ export default function ExtractionOps() {
       </div>
 
       <div className="space-y-2">
+        <h2 className="font-bold">نسبة الرفض الحرفي (آخر الدفعات)</h2>
+        {runs.length === 0 ? (
+          <p className="text-muted text-sm">لا سجلات بعد</p>
+        ) : (
+          <div className="rounded-xl border border-border bg-card p-4">
+            <div className="flex items-end gap-1 h-28" dir="ltr">
+              {[...runs].reverse().slice(-20).map((r) => {
+                const denom = r.extracted + r.rejectedVerbatim || 1;
+                const rate = r.rejectedVerbatim / denom;
+                const h = Math.max(4, Math.round(rate * 100));
+                return (
+                  <div
+                    key={r.id}
+                    title={`${Math.round(rate * 100)}% رفض حرفي`}
+                    className="flex-1 rounded-t bg-breaking/80 min-w-[6px]"
+                    style={{ height: `${h}%` }}
+                  />
+                );
+              })}
+            </div>
+            <p className="text-xs text-muted mt-2">
+              ارتفاع الشريط = تدهور جودة البرومبت (نسبة المرفوض حرفياً من المستخرج+المرفوض).
+            </p>
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-2">
         <h2 className="font-bold">آخر الدفعات</h2>
         {runs.length === 0 ? (
           <p className="text-muted text-sm">لا سجلات بعد</p>
@@ -182,6 +211,7 @@ export default function ExtractionOps() {
                   <th className="px-3 py-2">مرفوض حرفي</th>
                   <th className="px-3 py-2">مكرر</th>
                   <th className="px-3 py-2">فشل</th>
+                  <th className="px-3 py-2">تكلفة ≈</th>
                 </tr>
               </thead>
               <tbody>
@@ -198,6 +228,11 @@ export default function ExtractionOps() {
                     <td className="px-3 py-2">{r.rejectedVerbatim}</td>
                     <td className="px-3 py-2">{r.duplicates}</td>
                     <td className="px-3 py-2">{r.failures}</td>
+                    <td className="px-3 py-2 tabular">
+                      {r.estimatedCostUsd != null
+                        ? `$${Number(r.estimatedCostUsd).toFixed(4)}`
+                        : "—"}
+                    </td>
                   </tr>
                 ))}
               </tbody>

@@ -185,6 +185,21 @@ export default function UsersAdmin() {
                 >
                   {u.disabled ? "تفعيل" : "تعطيل"}
                 </button>
+                <button
+                  disabled={busy}
+                  onClick={() => {
+                    const pw = prompt("كلمة مرور جديدة (≥8 أحرف):");
+                    if (!pw) return;
+                    if (pw.length < 8) {
+                      setError("كلمة المرور قصيرة");
+                      return;
+                    }
+                    void patch(u.id, { password: pw });
+                  }}
+                  className="text-sm text-muted hover:text-accent hover:underline disabled:opacity-50"
+                >
+                  كلمة مرور
+                </button>
               </div>
             </li>
           ))}
