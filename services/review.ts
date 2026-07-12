@@ -88,6 +88,10 @@ export async function approveStatement(id: string, reviewerId: string) {
     .set({ status: "approved", reviewedBy: reviewerId, reviewedAt: new Date(), rejectionReason: null })
     .where(eq(statements.id, id))
     .returning();
+  if (updated) {
+    const { indexStatementInBackground } = await import("@/services/embeddings");
+    indexStatementInBackground(updated.id);
+  }
   return updated ?? null;
 }
 
@@ -97,6 +101,10 @@ export async function rejectStatement(id: string, reviewerId: string, reason?: s
     .set({ status: "rejected", reviewedBy: reviewerId, reviewedAt: new Date(), rejectionReason: reason ?? null })
     .where(eq(statements.id, id))
     .returning();
+  if (updated) {
+    const { statementEmbeddings } = await import("@/db/schema");
+    await db().delete(statementEmbeddings).where(eq(statementEmbeddings.statementId, id));
+  }
   return updated ?? null;
 }
 
@@ -112,6 +120,10 @@ export async function restoreStatement(id: string, reviewerId: string) {
     })
     .where(eq(statements.id, id))
     .returning();
+  if (updated) {
+    const { statementEmbeddings } = await import("@/db/schema");
+    await db().delete(statementEmbeddings).where(eq(statementEmbeddings.statementId, id));
+  }
   return updated ?? null;
 }
 
@@ -287,6 +299,9 @@ export async function createManualStatement(
   if (!created) {
     return { ok: false, reason: "validation", message: "تعذر حفظ التصريح" };
   }
+
+  const { indexStatementInBackground } = await import("@/services/embeddings");
+  indexStatementInBackground(created.id);
 
   return { ok: true, statement: created, figureSlug: figure.slug };
 }

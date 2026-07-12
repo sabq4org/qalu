@@ -8,6 +8,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const entries: MetadataRoute.Sitemap = [
     { url: SITE_URL, changeFrequency: "hourly", priority: 1 },
+    { url: `${SITE_URL}/search`, changeFrequency: "weekly", priority: 0.7 },
   ];
 
   try {

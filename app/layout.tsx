@@ -1,4 +1,5 @@
 import CloudflareAnalytics from "@/components/CloudflareAnalytics";
+import HeaderSearch from "@/components/HeaderSearch";
 import type { Metadata } from "next";
 import { IBM_Plex_Sans_Arabic } from "next/font/google";
 import Link from "next/link";
@@ -49,13 +50,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen flex flex-col">
         <CloudflareAnalytics />
         <header className="border-b border-border bg-card">
-          <div className="mx-auto max-w-5xl px-4 py-4 flex items-center justify-between">
-            <Link href="/" aria-label="ماذا قالوا — الرئيسية">
+          <div className="mx-auto max-w-5xl px-4 py-3 sm:py-4 flex items-center justify-between gap-3">
+            <Link href="/" aria-label="ماذا قالوا — الرئيسية" className="shrink-0">
               <BrandMark size={34} />
             </Link>
-            <p className="text-sm text-muted hidden sm:block">
-              القول الفصل في التصريحات
-            </p>
+            <HeaderSearch />
           </div>
         </header>
         <main className="flex-1 mx-auto w-full max-w-5xl px-4 py-5 sm:py-8">{children}</main>

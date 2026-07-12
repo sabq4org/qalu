@@ -170,3 +170,16 @@ export const auditLogs = pgTable(
 );
 
 export type AuditLog = typeof auditLogs.$inferSelect;
+
+// ── تضمينات البحث الدلالي (JSON لمتجه text-embedding-3-small) ─────
+export const statementEmbeddings = pgTable("statement_embeddings", {
+  statementId: varchar("statement_id")
+    .primaryKey()
+    .references(() => statements.id, { onDelete: "cascade" }),
+  /** مصفوفة أرقام JSON — بدون اعتماد على امتداد pgvector */
+  embedding: text("embedding").notNull(),
+  model: text("model").notNull().default("text-embedding-3-small"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type StatementEmbedding = typeof statementEmbeddings.$inferSelect;
