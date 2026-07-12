@@ -4,6 +4,8 @@
  */
 import { eq } from "drizzle-orm";
 
+process.env.QALU_SCRIPT = "1";
+
 try {
   process.loadEnvFile(".env.local");
 } catch {
@@ -14,7 +16,7 @@ try {
   }
 }
 
-import { db } from "../db";
+import { closeDb, db } from "../db";
 import { statements } from "../db/schema";
 import { upsertStatementEmbedding } from "../services/embeddings";
 
@@ -39,9 +41,11 @@ async function main() {
     }
   }
   console.log(`\n[index:embeddings] تم ${ok} · فشل/تخطّي ${fail}`);
+  await closeDb();
 }
 
-main().catch((err) => {
+main().catch(async (err) => {
   console.error(err);
+  await closeDb().catch(() => undefined);
   process.exit(1);
 });
