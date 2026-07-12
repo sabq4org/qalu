@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import FigureAvatar from "@/components/FigureAvatar";
+import FigureBio from "@/components/FigureBio";
 import StatementCard from "@/components/StatementCard";
 import { getApprovedStatements, getFigureBySlug, hasApprovedStatements } from "@/services/figures";
 
@@ -127,7 +128,7 @@ export default async function FigurePage({ params, searchParams }: PageProps) {
               )}
             </h1>
             {figure.title && <p className="text-muted mt-2 text-lg">{figure.title}</p>}
-            {figure.bio && <p className="mt-4 leading-relaxed">{figure.bio}</p>}
+            {figure.bio && <FigureBio bio={figure.bio} />}
           </div>
         </div>
       </section>
